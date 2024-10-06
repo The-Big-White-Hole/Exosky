@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import styles from './styles.module.css';
 
-const GalaxyApp: React.FC = () => {
+const Explorer: React.FC = () => {
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const [tooltip, setTooltip] = useState<string | null>(null);
 
@@ -165,5 +165,5 @@ const GalaxyApp: React.FC = () => {
     );
 };
 
-export default GalaxyApp;
+export default Explorer;
 
