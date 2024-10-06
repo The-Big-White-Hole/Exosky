@@ -4,6 +4,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import styles from './styles.module.css';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import gsap from 'gsap';
 
 const Explorer: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -13,6 +14,8 @@ const Explorer: React.FC = () => {
   const [exoplanets, setExoplanets] = useState<{ x: number; y: number; z: number; name: string }[]>([]);
   const [filteredExoplanets, setFilteredExoplanets] = useState<{ x: number; y: number; z: number; name: string }[]>([]);
   const controlsRef = useRef<OrbitControls | null>(null); // Хранение ссылки на OrbitControls
+  const cameraRef = useRef<THREE.PerspectiveCamera | null>(null); // Хранение ссылки на камеру
+
 
   useEffect(() => {
     const scene = new THREE.Scene();
@@ -129,6 +132,9 @@ const Explorer: React.FC = () => {
     const camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 0.1, 100);
     camera.position.set(1, 1, 1);
     scene.add(camera);
+    cameraRef.current = camera;
+
+
 
     const renderer = new THREE.WebGLRenderer({
       canvas: canvasRef.current as HTMLCanvasElement,
@@ -190,10 +196,22 @@ const Explorer: React.FC = () => {
   }, []);
 
   // Функция для установки точки обзора камеры
-  const focusOnExoplanet = (x: number, y: number, z: number) => {
-    if (controlsRef.current) {
+ const focusOnExoplanet = (x: number, y: number, z: number) => {
+    const camera = cameraRef.current;
+    if (controlsRef.current && camera) {
       controlsRef.current.target.set(x, y, z); // Устанавливаем цель для OrbitControls
-      controlsRef.current.update(); // Обновляем контроллер
+      
+      // Плавно перемещаем камеру к новой позиции с помощью gsap
+      gsap.to(camera.position, {
+        x: x,
+        y: y,
+        z: z + 10,
+        duration: 1, // Длительность анимации в секундах
+        onUpdate: () => controlsRef.current?.update(), // Обновляем контроллер во время анимации
+      });
+
+      // Обновляем контроллер сразу, чтобы цель была установлена правильно
+      controlsRef.current.update();
     }
   };
 
