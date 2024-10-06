@@ -415,7 +415,7 @@ export function PlanetView() {
     <div>
       <div ref={mountRef} className={styles.canvasContainer} />
       <Options toggleEquatorial={toggleEquatorial} toggleGalactic={toggleGalactic}/>
-      <Button variant={isDrawingMode? "destructive" : null} onClick={toggleDrawingMode}>NAZHMI NA MENYA GOVNO</Button>
+      <Button variant={isDrawingMode? "destructive" : null} onClick={toggleDrawingMode}>{isDrawingMode? "OBSERVER MODE" : "DRAWING MODE"}</Button>
       {hoveredStar && (
         <div className={styles.tooltip} style={{ top: `${tooltipPosition.top}px`, left: `${tooltipPosition.left}px` }}>
           {hoveredStar}
