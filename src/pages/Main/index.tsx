@@ -5,7 +5,6 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { AdditiveBlending } from 'three';
-import styles from './styles.module.sass'; // Убедитесь, что стили корректны
 
 const Main: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
