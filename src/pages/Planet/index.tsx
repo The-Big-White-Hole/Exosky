@@ -13,9 +13,15 @@ export function PlanetView() {
   const camera = useRef(
     new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000)
   );
+
+  // conttrolling the drawing mode
+  const isDrawingMode = useRef(true);
   const renderer = useRef<THREE.WebGLRenderer | null>(null);
   const composer = useRef<EffectComposer | null>(null);
   const raycaster = useRef(new THREE.Raycaster());
+
+  // INCREASING ACCURACUY OF RAYCASTER
+  raycaster.current.params.Points.threshold = 2;
   const mouse = useRef(new THREE.Vector2());
 
   const isDragging = useRef(false);
@@ -140,11 +146,17 @@ export function PlanetView() {
     if (intersects.length > 0) {
       const intersection = intersects[0];
       const starIndex = intersection.index!;
-      const starVmag = intersection.object.geometry.getAttribute('Vmag').getX(starIndex);
-      if (starVmag !== undefined) {
-        setClickedStar(`Clicked on star: Vmag ${starVmag}`);
+
+      if (!isDrawingMode){
+        const starVmag = intersection.object.geometry.getAttribute('Vmag').getX(starIndex);
+        if (starVmag !== undefined) {
+          setClickedStar(`Clicked on star: Vmag ${starVmag}`);
+        } else {
+          clearClickedStar();
+        }
       } else {
-        clearClickedStar();
+        const starCoords = intersection.object.geometry.getAttribute("position");
+        console.log(starCoords)
       }
     }
   };
