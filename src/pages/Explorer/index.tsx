@@ -7,6 +7,7 @@ import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPa
 import styles from './styles.module.css';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import gsap from 'gsap';
 
 const Explorer: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -16,13 +17,16 @@ const Explorer: React.FC = () => {
   const [exoplanets, setExoplanets] = useState<{ x: number; y: number; z: number; name: string }[]>([]);
   const [filteredExoplanets, setFilteredExoplanets] = useState<{ x: number; y: number; z: number; name: string }[]>([]);
   const controlsRef = useRef<OrbitControls | null>(null);
+  const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
+
+  const controlsRef = useRef<OrbitControls | null>(null);
   const raycaster = useRef(new THREE.Raycaster());
   const mouse = useRef(new THREE.Vector2());
 
   const starColors = [
     new THREE.Color(0.5, 0.5, 1), // Blue
-    new THREE.Color(1, 0.5, 0.5), // Red 
-    new THREE.Color(1, 1, 1),     // Green 
+    new THREE.Color(1, 0.5, 0.5), // Red
+    new THREE.Color(1, 1, 1),     // Green
   ];
 
   const vertexShader = `
@@ -230,6 +234,9 @@ const Explorer: React.FC = () => {
     const camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 0.1, 100);
     camera.position.set(1, 1, 1);
     scene.add(camera);
+    cameraRef.current = camera;
+
+
 
     const renderer = new THREE.WebGLRenderer({
       canvas: canvasRef.current as HTMLCanvasElement,
@@ -288,6 +295,21 @@ const Explorer: React.FC = () => {
   const focusOnExoplanet = (x: number, y: number, z: number) => {
     if (controlsRef.current) {
       controlsRef.current.target.set(x, y, z);
+      controlsRef.current.update();
+
+ const focusOnExoplanet = (x: number, y: number, z: number) => {
+    const camera = cameraRef.current;
+    if (controlsRef.current && camera) {
+      controlsRef.current.target.set(x, y, z);
+
+      gsap.to(camera.position, {
+        x: x,
+        y: y,
+        z: z + 10,
+        duration: 1,
+        onUpdate: () => controlsRef.current?.update(), // Обновляем контроллер во время анимации
+      });
+
       controlsRef.current.update();
     }
   };

@@ -6,6 +6,16 @@ import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPa
 import { Options } from './options';
 import styles from './styles.module.css';
 import { createGalacticGrid, createEquatorialGrid } from './grid';
+import { Button } from '@/components/ui/button';
+
+const DEFAULT_LINE_MATERIAL = new THREE.LineDashedMaterial( {
+	color: 0x4deeea,
+	linewidth: 1,
+	scale: 1,
+	dashSize: 3,
+	gapSize: 1,
+} );
+
 
 export function PlanetView() {
   const mountRef = useRef<HTMLDivElement>(null);
@@ -13,9 +23,17 @@ export function PlanetView() {
   const camera = useRef(
     new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000)
   );
+
+  // conttrolling the drawing mode
+  const [isDrawingMode, setIsDrawingMode] = useState(false);
+  const initialLinePoint = useRef<THREE.Vector3 | null>(null);
+
   const renderer = useRef<THREE.WebGLRenderer | null>(null);
   const composer = useRef<EffectComposer | null>(null);
   const raycaster = useRef(new THREE.Raycaster());
+
+  // INCREASING ACCURACUY OF RAYCASTER
+  raycaster.current.params.Points.threshold = 5;
   const mouse = useRef(new THREE.Vector2());
 
   const isDragging = useRef(false);
@@ -145,11 +163,35 @@ export function PlanetView() {
     if (intersects.length > 0) {
       const intersection = intersects[0];
       const starIndex = intersection.index!;
-      const starVmag = intersection.object.geometry.getAttribute('Vmag').getX(starIndex);
-      if (starVmag !== undefined) {
-        setClickedStar(`Clicked on star: Vmag ${starVmag}`);
+      console.log(isDrawingMode)
+      // if the mode is drawing!
+      if (!isDrawingMode){
+        const starVmag = intersection.object.geometry.getAttribute('Vmag').getX(starIndex);
+        if (starVmag !== undefined) {
+          setClickedStar(`Clicked on star: Vmag ${starVmag}`);
+        } else {
+          clearClickedStar();
+        }
       } else {
-        clearClickedStar();
+
+        // creating an initial point from the intrersected object
+        const starCoordsX = intersection.object.geometry.getAttribute("position").getX(starIndex);
+        const starCoordsY = intersection.object.geometry.getAttribute("position").getY(starIndex);
+        const starCoordsZ = intersection.object.geometry.getAttribute("position").getZ(starIndex);
+        const starPoint = new THREE.Vector3(starCoordsX, starCoordsY, starCoordsZ);
+
+
+        // drawing line if it is already locked, or just lokcing the first point
+        if (initialLinePoint.current) {
+          const lineGeometry = new THREE.BufferGeometry().setFromPoints([initialLinePoint.current, starPoint]);
+          const newLine =  new THREE.Line( lineGeometry , DEFAULT_LINE_MATERIAL);
+          scene.current.add(newLine);
+          initialLinePoint.current = starPoint
+        }
+        else {
+          initialLinePoint.current = starPoint;
+        }
+
       }
     }
   };
@@ -327,6 +369,18 @@ export function PlanetView() {
     return result;
   };
 
+  const toggleDrawingMode = (event: React.MouseEvent<HTMLButtonElement>) => {
+    console.log(event);
+    if (isDrawingMode) {
+      console.log("WRITTEN A LOA D OF SHIT");
+      setIsDrawingMode(false);
+    } else {
+      console.log("POEHALI :PPPPP")
+      setIsDrawingMode(true);
+    }
+    
+  };
+
   const toggleEquatorial = (isVisible: boolean) => {
     if (!equatorialGrid && isVisible) {
       const grid = createEquatorialGrid();
@@ -360,7 +414,8 @@ export function PlanetView() {
   return (
     <div>
       <div ref={mountRef} className={styles.canvasContainer} />
-      <Options toggleEquatorial={toggleEquatorial} toggleGalactic={toggleGalactic} />
+      <Options toggleEquatorial={toggleEquatorial} toggleGalactic={toggleGalactic}/>
+      <Button variant={isDrawingMode? "destructive" : null} onClick={toggleDrawingMode}>NAZHMI NA MENYA GOVNO</Button>
       {hoveredStar && (
         <div className={styles.tooltip} style={{ top: `${tooltipPosition.top}px`, left: `${tooltipPosition.left}px` }}>
           {hoveredStar}
