@@ -1,0 +1,57 @@
+.explorer {
+  text-align: center;
+  color: blue;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  overflow: hidden;
+}
+
+.webgl {
+  position: fixed;
+  top: 0;
+  left: 0;
+  outline: none;
+}
+
+.heading {
+  font-family: 'Space Mono', monospace;
+  z-index: 3;
+  position: absolute;
+  top: 30px;
+  left: 20px;
+  color: white;
+}
+
+.heading h1 {
+  font-size: 3rem;
+  margin: 10px;
+}
+
+.heading h4 {
+  font-size: 1rem;
+  font-weight: 400;
+  margin: 10px;
+}
+
+.container {
+  width: 100vw;
+  height: 100vh;
+  position: relative;
+}
+
+.tooltip {
+  position: absolute;
+  background-color: rgba(255, 255, 255, 0.8);
+  padding: 5px 10px;
+  border-radius: 5px;
+  pointer-events: none;
+  font-size: 14px;
+  z-index: 10;
+}
+
