@@ -91,6 +91,21 @@ const Main: React.FC = () => {
             Explore
           </Button>
         </Link>
+        <Link to="/planet">
+          <Button
+            style={{
+              backgroundColor: '#1976D2',
+              color: 'white',
+              fontSize: '18px',
+              padding: '10px 20px',
+              borderRadius: '5px',
+              cursor: 'pointer',
+              border: 'none',
+            }}
+          >
+            Planet
+          </Button>
+        </Link>
       </div>
     </div>
   );

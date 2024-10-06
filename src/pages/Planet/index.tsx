@@ -25,6 +25,7 @@ export function PlanetView() {
   const mouse = useRef(new THREE.Vector2());
 
   const isDragging = useRef(false);
+  const isRightMouseButtonPressed = useRef(false); // Новый реф для ПКМ
   const prevMousePosition = useRef({ x: 0, y: 0 });
 
   const [hoveredStar, setHoveredStar] = useState<string | null>(null);
@@ -119,11 +120,15 @@ export function PlanetView() {
     mountRef.current.addEventListener('mousemove', onMouseMove);
     mountRef.current.addEventListener('click', onStarClick);
 
+    window.addEventListener('click', onWindowClick); // Новый обработчик для закрытия тултипа
+
     loadJSONData();
 
     return () => {
       window.removeEventListener('resize', onWindowResize);
       window.removeEventListener('wheel', onWheelZoom);
+      window.removeEventListener('click', onWindowClick); // Убираем обработчик
+
       if (mountRef.current) {
         mountRef.current.removeEventListener('mousedown', onMouseDown);
         mountRef.current.removeEventListener('mouseup', onMouseUp);
@@ -165,6 +170,13 @@ export function PlanetView() {
     setClickedStar(null);
   };
 
+  const onWindowClick = (event: MouseEvent) => {
+    const targetElement = event.target as Element;
+    if (clickedStar && targetElement && !targetElement.closest(`.${styles.tooltip}`)) {
+      clearClickedStar();
+    }
+  };
+
   const onWheelZoom = (event: WheelEvent) => {
     const zoomSpeed = 0.1;
     camera.current.fov += event.deltaY * zoomSpeed;
@@ -182,7 +194,11 @@ export function PlanetView() {
   };
 
   const onMouseDown = (event: MouseEvent) => {
-    isDragging.current = true;
+    if (event.button === 2) {
+      isRightMouseButtonPressed.current = true;
+    } else {
+      isDragging.current = true;
+    }
     prevMousePosition.current = {
       x: event.clientX,
       y: event.clientY,
@@ -191,6 +207,7 @@ export function PlanetView() {
 
   const onMouseUp = () => {
     isDragging.current = false;
+    isRightMouseButtonPressed.current = false;
   };
 
   const onMouseMove = (event: MouseEvent) => {
@@ -204,6 +221,22 @@ export function PlanetView() {
 
       camera.current.rotation.y -= deltaMove.x * rotationSpeed;
       camera.current.rotation.x -= deltaMove.y * rotationSpeed;
+
+      prevMousePosition.current = {
+        x: event.clientX,
+        y: event.clientY,
+      };
+    }
+
+    if (isRightMouseButtonPressed.current) {
+      const deltaMove = {
+        x: event.clientX - prevMousePosition.current.x,
+        y: event.clientY - prevMousePosition.current.y,
+      };
+
+      const moveSpeed = 0.5;
+      camera.current.position.x -= deltaMove.x * moveSpeed;
+      camera.current.position.y += deltaMove.y * moveSpeed;
 
       prevMousePosition.current = {
         x: event.clientX,
@@ -356,3 +389,4 @@ export function PlanetView() {
 }
 
 export default PlanetView;
+
