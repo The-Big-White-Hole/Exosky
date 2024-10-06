@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
 const Main: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -73,7 +74,7 @@ const Main: React.FC = () => {
       }}
     >
       <canvas ref={canvasRef} style={{ position: 'absolute', top: 0, left: 0 }} />
-      <div
+      <Card
         style={{
           position: 'absolute',
           top: '50%',
@@ -81,32 +82,29 @@ const Main: React.FC = () => {
           transform: 'translate(-50%, -50%)',
           textAlign: 'center',
           zIndex: 1,
+          maxWidth: '400px',
         }}
       >
-        <h1 style={{ color: 'white', marginBottom: '20px', fontSize: '48px' }}>
-          Welcome to the Universe
-        </h1>
-        <Link to="/explorer">
-          <Button variant="destructive">
-            Explore
-          </Button>
-        </Link>
-        <Link to="/planet">
-          <Button
-            style={{
-              backgroundColor: '#1976D2',
-              color: 'white',
-              fontSize: '18px',
-              padding: '10px 20px',
-              borderRadius: '5px',
-              cursor: 'pointer',
-              border: 'none',
-            }}
-          >
-            Planet
-          </Button>
-        </Link>
-      </div>
+        <CardHeader>
+          <CardTitle style={{ fontSize: '48px', color: 'white' }}>
+            Welcome to the Universe
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+            <Link to="/explorer">
+              <Button variant="destructive">
+                Explore
+              </Button>
+            </Link>
+            <Link to="/planet">
+              <Button variant="secondary">
+                Planet
+              </Button>
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
