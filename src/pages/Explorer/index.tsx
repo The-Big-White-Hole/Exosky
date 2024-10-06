@@ -1,6 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import styles from './styles.module.css';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -12,87 +15,192 @@ const Explorer: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [exoplanets, setExoplanets] = useState<{ x: number; y: number; z: number; name: string }[]>([]);
   const [filteredExoplanets, setFilteredExoplanets] = useState<{ x: number; y: number; z: number; name: string }[]>([]);
-  const controlsRef = useRef<OrbitControls | null>(null); // Хранение ссылки на OrbitControls
+  const controlsRef = useRef<OrbitControls | null>(null);
+  const raycaster = useRef(new THREE.Raycaster());
+  const mouse = useRef(new THREE.Vector2());
+
+  const starColors = [
+    new THREE.Color(0.5, 0.5, 1), // Blue
+    new THREE.Color(1, 0.5, 0.5), // Red 
+    new THREE.Color(1, 1, 1),     // Green 
+  ];
+
+  const vertexShader = `
+    attribute float size;
+    attribute float Vmag;
+    attribute vec3 color;
+    varying vec3 vColor;
+    varying float vVmag;
+    varying float vSize;
+
+    void main() {
+      vColor = color;
+      vVmag = Vmag;
+      vSize = size;
+      vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+      gl_PointSize = size * (100.0 / -mvPosition.z);
+      gl_Position = projectionMatrix * mvPosition;
+    }
+  `;
+
+  const starFragmentShader = `
+    varying vec3 vColor;
+    varying float vVmag;
+    varying float vSize;
+
+    void main() {
+      vec2 uv = gl_PointCoord - vec2(0.5);
+      float d = length(uv) * 2.0;
+      float intensity = 1.0 - smoothstep(0.0, 1.0, d);
+
+      float baseLuminosity = 0.5;
+
+      float luminosity = vVmag < 0.0 ? 3.0 - vVmag : 1.0 / (vVmag + 1.0);
+      luminosity = max(luminosity, baseLuminosity);
+
+      float glow1 = smoothstep(0.4, 0.8, vSize * intensity);
+      float glow2 = smoothstep(0.3, 0.6, vSize * intensity) * 0.5;
+
+      float totalGlow = glow1 + glow2;
+
+      float brightnessThreshold = 2.0;
+      totalGlow = min(totalGlow, brightnessThreshold);
+
+      vec3 col = vColor * totalGlow * luminosity * 3.0;
+      gl_FragColor = vec4(col, 1.0);
+    }
+  `;
+
+  const planetFragmentShader = `
+    varying float vSize;
+
+    void main() {
+      vec2 uv = gl_PointCoord - vec2(0.5);
+      float d = length(uv) * 2.0;
+      float intensity = 1.0 - smoothstep(0.0, 1.0, d);
+
+      float glow1 = smoothstep(0.4, 0.8, vSize * intensity);
+      float glow2 = smoothstep(0.3, 0.6, vSize * intensity) * 0.5;
+      float glow3 = smoothstep(0.2, 0.4, vSize * intensity) * 0.3;
+
+      float totalGlow = glow1 + glow2 + glow3;
+
+      float brightnessThreshold = 2.0;
+      totalGlow = min(totalGlow, brightnessThreshold);
+
+      vec3 col = vec3(0.0, 1.0, 0.0) * totalGlow;
+      gl_FragColor = vec4(col, 1.0);
+    }
+  `;
 
   useEffect(() => {
-    const scene = new THREE.Scene();
+    const scene = new THREE.Scene;
 
-    const parameters = {
-      size: 0.1,
-      starColor: '#ffffff',
-      size_sun: 0.15,
-      sunColor: '#ffdb4d',
-      size_exo: 0.1,
-      exoColor: '#b6d7a8',
-    };
+    let coordinatesS: { x: number; y: number; z: number; Vmag: number }[] = [];
+    let coordinatesP: { x: number; y: number; z: number; name: string }[] = [];
+    let starMaterial: THREE.ShaderMaterial;
 
-    let coordinatesS: { x: number; y: number; z: number; name?: string }[] = [];
-    let coordinatesP: { x: number; y: number; z: number; name?: string }[] = [];
+    const generateStars = (coordinatesS: { x: number; y: number; z: number; Vmag: number }[], scene: THREE.Scene) => {
+      const starData = coordinatesS.map((coord) => ({
+        x: coord.x,
+        y: coord.y,
+        z: coord.z,
+        Vmag: coord.Vmag,
+        size: 1,
+        color: starColors[Math.floor(Math.random() * starColors.length)]
+      }));
 
-    const addSun = (scene: THREE.Scene) => {
-      const sunGeometry = new THREE.SphereGeometry(parameters.size_sun, 32, 32);
-      const sunMaterial = new THREE.MeshBasicMaterial({ color: parameters.sunColor });
-      const sunMesh = new THREE.Mesh(sunGeometry, sunMaterial);
-      sunMesh.position.set(0, 0, 0);
-      sunMesh.userData = { type: 'sun', name: 'Sun' };
-      scene.add(sunMesh);
-    };
+      const starPositions = new Float32Array(starData.length * 3);
+      const starSizes = new Float32Array(starData.length);
+      const starVmagArray = new Float32Array(starData.length);
+      const starColorsArray = new Float32Array(starData.length * 3);
 
-    const addExo = (coordinatesP: { x: number; y: number; z: number; name: string }[], scene: THREE.Scene) => {
-      const exoGeometry = new THREE.SphereGeometry(parameters.size_exo, 32, 32);
-      const exoMaterial = new THREE.MeshBasicMaterial({ color: parameters.exoColor });
-
-      coordinatesP.forEach(coord => {
-        const exoMesh = new THREE.Mesh(exoGeometry, exoMaterial);
-        exoMesh.position.set(coord.x, coord.y, coord.z);
-        exoMesh.userData = { type: 'exo', name: coord.name };
-        scene.add(exoMesh);
-      });
-    };
-
-    const generateGalaxy = (coordinatesS: { x: number; y: number; z: number; name: string }[], scene: THREE.Scene) => {
-      const count = coordinatesS.length;
-      const positions = new Float32Array(count * 3);
-
-      coordinatesS.forEach((coord, index) => {
-        positions[index * 3] = coord.x;
-        positions[index * 3 + 1] = coord.y;
-        positions[index * 3 + 2] = coord.z;
+      starData.forEach((star, i) => {
+        starPositions[i * 3] = star.x;
+        starPositions[i * 3 + 1] = star.y;
+        starPositions[i * 3 + 2] = star.z;
+        starSizes[i] = star.size;
+        starVmagArray[i] = star.Vmag;
+        starColorsArray[i * 3] = star.color.r;
+        starColorsArray[i * 3 + 1] = star.color.g;
+        starColorsArray[i * 3 + 2] = star.color.b;
       });
 
       const starGeometry = new THREE.BufferGeometry();
-      starGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      starGeometry.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
+      starGeometry.setAttribute('size', new THREE.BufferAttribute(starSizes, 1));
+      starGeometry.setAttribute('Vmag', new THREE.BufferAttribute(starVmagArray, 1));
+      starGeometry.setAttribute('color', new THREE.BufferAttribute(starColorsArray, 3));
 
-      const starMaterial = new THREE.PointsMaterial({
-        size: parameters.size,
-        color: parameters.starColor,
+      starMaterial = new THREE.ShaderMaterial({
+        vertexShader,
+        fragmentShader: starFragmentShader,
+        transparent: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
       });
 
       const stars = new THREE.Points(starGeometry, starMaterial);
+      stars.renderOrder = 1;
       scene.add(stars);
+    };
+
+    const generatePlanets = (coordinatesP: { x: number; y: number; z: number; name: string }[], scene: THREE.Scene) => {
+      const planetData = coordinatesP.map((coord) => ({
+        x: coord.x,
+        y: coord.y,
+        z: coord.z,
+        name: coord.name,
+        size: 2 + Math.random() * 3,
+      }));
+
+      const planetPositions = new Float32Array((planetData.length + 1) * 3);
+      const planetSizes = new Float32Array(planetData.length + 1);
+
+      planetData.forEach((planet, i) => {
+        planetPositions[i * 3] = planet.x;
+        planetPositions[i * 3 + 1] = planet.y;
+        planetPositions[i * 3 + 2] = planet.z;
+        planetSizes[i] = planet.size;
+      });
+
+      const planetGeometry = new THREE.BufferGeometry();
+      planetGeometry.setAttribute('position', new THREE.BufferAttribute(planetPositions, 3));
+      planetGeometry.setAttribute('size', new THREE.BufferAttribute(planetSizes, 1));
+
+      const planetMaterial = new THREE.ShaderMaterial({
+        vertexShader,
+        fragmentShader: planetFragmentShader,
+        transparent: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+      });
+
+      const planets = new THREE.Points(planetGeometry, planetMaterial);
+      planets.renderOrder = 2;
+      scene.add(planets);
+
+      return planetData;
     };
 
     const loadCoordinates = () => {
       Promise.all([
-        fetch('data/cart_nearby_stars.json').then(response => response.json()),
+        fetch('data/near_stars_revised_crop.json').then(response => response.json()),
         fetch('data/cart_nearby_planets.json').then(response => response.json())
       ])
         .then(([starsData, planetsData]) => {
-          const starNamesExist = starsData.name !== undefined;
-          const planetNamesExist = planetsData.name !== undefined;
-
           coordinatesS = Object.keys(starsData.x).map((key) => ({
             x: starsData.x[key],
             y: starsData.y[key],
             z: starsData.z[key],
-            name: starNamesExist ? starsData.names[key] || `Star ${key}` : `Star ${key}`,
+            Vmag: starsData.Vmag?.[key] || 0,
           }));
 
           coordinatesP = Object.keys(planetsData.x).map((key) => ({
             x: planetsData.x[key],
             y: planetsData.y[key],
             z: planetsData.z[key],
-            name: planetNamesExist ? planetsData.name[key] || `Exoplanet ${key}` : `Exoplanet ${key}`,
+            name: planetsData.name?.[key] || `Exoplanet ${key}`,
           }));
 
           setExoplanets(
@@ -108,15 +216,8 @@ const Explorer: React.FC = () => {
             }))
           );
 
-          generateGalaxy(
-            coordinatesS.map(star => ({ ...star, name: star.name || `Star ${star.x}-${star.y}-${star.z}` })),
-            scene
-          );
-          addSun(scene);
-          addExo(
-            coordinatesP.map(planet => ({ ...planet, name: planet.name || `Exoplanet ${planet.x}-${planet.y}-${planet.z}` })),
-            scene
-          );
+          generateStars(coordinatesS, scene);
+          generatePlanets(coordinatesP, scene);
         })
         .catch(error => {
           console.error('Failed to load JSON:', error);
@@ -136,40 +237,38 @@ const Explorer: React.FC = () => {
     renderer.setSize(sizes.width, sizes.height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
+    const composer = new EffectComposer(renderer);
+    const renderPass = new RenderPass(scene, camera);
+    const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+    composer.addPass(renderPass);
+    composer.addPass(bloomPass);
+
     const controls = new OrbitControls(camera, canvasRef.current as HTMLCanvasElement);
     controls.enableDamping = true;
-    controlsRef.current = controls; // Сохраняем ссылку на controls
+    controlsRef.current = controls;
 
-    const raycaster = new THREE.Raycaster();
-    const mouse = new THREE.Vector2();
+    const onMouseMove = (event: MouseEvent) => {
+      mouse.current.x = (event.clientX / window.innerWidth) * 2 - 1;
+      mouse.current.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
-    const onClick = (event: MouseEvent) => {
-      mouse.x = (event.clientX / sizes.width) * 2 - 1;
-      mouse.y = -(event.clientY / sizes.height) * 2 + 1;
-
-      raycaster.setFromCamera(mouse, camera);
-      const intersects = raycaster.intersectObjects(scene.children, true);
+      raycaster.current.setFromCamera(mouse.current, camera);
+      const intersects = raycaster.current.intersectObjects(scene.children, true);
 
       if (intersects.length > 0) {
         const intersectedObject = intersects[0].object;
-
-        if (intersectedObject.userData.type === 'exo') {
-          setTooltip(`Exoplanet: ${intersectedObject.userData.name}`);
-        } else if (intersectedObject.userData.type === 'sun') {
-          setTooltip('Sun');
-        } else {
-          setTooltip(null);
+        if (intersectedObject.userData.name) {
+          setTooltip(`Object: ${intersectedObject.userData.name}`);
         }
       } else {
         setTooltip(null);
-      };
+      }
     };
 
-    window.addEventListener('click', onClick);
+    window.addEventListener('mousemove', onMouseMove);
 
     const tick = () => {
       controls.update();
-      renderer.render(scene, camera);
+      composer.render();
       requestAnimationFrame(tick);
     };
 
@@ -181,19 +280,15 @@ const Explorer: React.FC = () => {
       camera.aspect = sizes.width / sizes.height;
       camera.updateProjectionMatrix();
       renderer.setSize(sizes.width, sizes.height);
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      composer.setSize(sizes.width, sizes.height);
     });
 
-    return () => {
-      window.removeEventListener('click', onClick);
-    };
   }, []);
 
-  // Функция для установки точки обзора камеры
   const focusOnExoplanet = (x: number, y: number, z: number) => {
     if (controlsRef.current) {
-      controlsRef.current.target.set(x, y, z); // Устанавливаем цель для OrbitControls
-      controlsRef.current.update(); // Обновляем контроллер
+      controlsRef.current.target.set(x, y, z);
+      controlsRef.current.update();
     }
   };
 
@@ -234,7 +329,7 @@ const Explorer: React.FC = () => {
               <li
                 key={`${exo.x}-${exo.y}-${exo.z}`}
                 className={styles.exoItem}
-                onClick={() => focusOnExoplanet(exo.x, exo.y, exo.z)} // Выбор экзопланеты
+                onClick={() => focusOnExoplanet(exo.x, exo.y, exo.z)}
               >
                 {exo.name}
               </li>

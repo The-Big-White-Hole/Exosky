@@ -23,18 +23,18 @@ html, body {
   width: 100%;
   height: 100%;
   outline: none;
-  z-index: 0; /* Канвас на заднем плане */
+  z-index: 0;
 }
 
 .menu {
   display: flex;
   flex-direction: column;
   padding: 20px;
-  background-color: #1e1e2f; /* Темный фон */
+  background-color: #1e1e2f;
   width: 300px;
   height: 100%;
-  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.2); /* Тень для глубины */
-  border-right: 1px solid rgba(255, 255, 255, 0.1); /* Легкая рамка */
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.2);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
   z-index: 1000;
   position: fixed;
   top: 0;
@@ -80,7 +80,7 @@ html, body {
   width: 100%;
   height: 100%;
   outline: none;
-  z-index: 0; /* Канвас на заднем плане */
+  z-index: 0;
 }
 
 .tooltip {
@@ -96,7 +96,7 @@ html, body {
 .menuTitle {
   font-size: 24px;
   font-weight: bold;
-  color: #ffffff; /* Белый цвет текста */
+  color: #ffffff;
   margin-bottom: 20px;
 }
 
@@ -115,14 +115,14 @@ html, body {
 
 .exoItem {
   padding: 10px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1); /* Тонкая светлая рамка между элементами */
-  color: #ffffff; /* Белый цвет текста */
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  color: #ffffff;
   cursor: pointer;
   transition: background-color 0.3s ease;
 }
 
 .exoItem:hover {
-  background-color: rgba(255, 255, 255, 0.1); /* Легкое выделение при наведении */
+  background-color: rgba(255, 255, 255, 0.1);
 }
 
 .heading {
