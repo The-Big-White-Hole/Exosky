@@ -298,6 +298,7 @@ export function PlanetView() {
 
   const loadJSONData = async () => {
 
+    
     // const response = await fetch('http://localhost:8000/exoplanets/Proxima%20Cen%20b/stars');
     const response = await fetch('data/earth_stars.json');
 
