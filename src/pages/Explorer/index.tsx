@@ -19,7 +19,6 @@ const Explorer: React.FC = () => {
   const controlsRef = useRef<OrbitControls | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
 
-  const controlsRef = useRef<OrbitControls | null>(null);
   const raycaster = useRef(new THREE.Raycaster());
   const mouse = useRef(new THREE.Vector2());
 
@@ -102,7 +101,6 @@ const Explorer: React.FC = () => {
 
     let coordinatesS: { x: number; y: number; z: number; Vmag: number }[] = [];
     let coordinatesP: { x: number; y: number; z: number; name: string }[] = [];
-    let starMaterial: THREE.ShaderMaterial;
 
     const generateStars = (coordinatesS: { x: number; y: number; z: number; Vmag: number }[], scene: THREE.Scene) => {
       const starData = coordinatesS.map((coord) => ({
@@ -136,7 +134,7 @@ const Explorer: React.FC = () => {
       starGeometry.setAttribute('Vmag', new THREE.BufferAttribute(starVmagArray, 1));
       starGeometry.setAttribute('color', new THREE.BufferAttribute(starColorsArray, 3));
 
-      starMaterial = new THREE.ShaderMaterial({
+      const starMaterial = new THREE.ShaderMaterial({
         vertexShader,
         fragmentShader: starFragmentShader,
         transparent: true,
@@ -155,11 +153,11 @@ const Explorer: React.FC = () => {
         y: coord.y,
         z: coord.z,
         name: coord.name,
-        size: 2 + Math.random() * 3,
+        size: 5,
       }));
 
-      const planetPositions = new Float32Array((planetData.length + 1) * 3);
-      const planetSizes = new Float32Array(planetData.length + 1);
+      const planetPositions = new Float32Array(planetData.length * 3);
+      const planetSizes = new Float32Array(planetData.length);
 
       planetData.forEach((planet, i) => {
         planetPositions[i * 3] = planet.x;
@@ -236,8 +234,6 @@ const Explorer: React.FC = () => {
     scene.add(camera);
     cameraRef.current = camera;
 
-
-
     const renderer = new THREE.WebGLRenderer({
       canvas: canvasRef.current as HTMLCanvasElement,
     });
@@ -289,15 +285,9 @@ const Explorer: React.FC = () => {
       renderer.setSize(sizes.width, sizes.height);
       composer.setSize(sizes.width, sizes.height);
     });
-
   }, []);
 
   const focusOnExoplanet = (x: number, y: number, z: number) => {
-    if (controlsRef.current) {
-      controlsRef.current.target.set(x, y, z);
-      controlsRef.current.update();
-
- const focusOnExoplanet = (x: number, y: number, z: number) => {
     const camera = cameraRef.current;
     if (controlsRef.current && camera) {
       controlsRef.current.target.set(x, y, z);
@@ -307,7 +297,11 @@ const Explorer: React.FC = () => {
         y: y,
         z: z + 10,
         duration: 1,
-        onUpdate: () => controlsRef.current?.update(), // Обновляем контроллер во время анимации
+        onUpdate: () => {
+          if (controlsRef.current) {
+            controlsRef.current.update();
+          }
+        },
       });
 
       controlsRef.current.update();
