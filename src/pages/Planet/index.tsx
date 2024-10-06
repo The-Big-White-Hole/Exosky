@@ -163,7 +163,7 @@ export function PlanetView() {
     if (intersects.length > 0) {
       const intersection = intersects[0];
       const starIndex = intersection.index!;
-      console.log(isDrawingMode)
+
       // if the mode is drawing!
       if (!isDrawingMode){
         const starVmag = intersection.object.geometry.getAttribute('Vmag').getX(starIndex);
@@ -297,7 +297,10 @@ export function PlanetView() {
   };
 
   const loadJSONData = async () => {
+
+    // const response = await fetch('http://localhost:8000/exoplanets/Proxima%20Cen%20b/stars');
     const response = await fetch('data/earth_stars.json');
+
     const rawData = await response.json();
 
     const starData = convertDataToArray(rawData);
@@ -369,13 +372,14 @@ export function PlanetView() {
     return result;
   };
 
+  
   const toggleDrawingMode = (event: React.MouseEvent<HTMLButtonElement>) => {
     console.log(event);
     if (isDrawingMode) {
-      console.log("WRITTEN A LOA D OF SHIT");
+      console.log("WRITTEN A");
       setIsDrawingMode(false);
     } else {
-      console.log("POEHALI :PPPPP")
+      console.log("LOADED :PPPPP")
       setIsDrawingMode(true);
     }
     
