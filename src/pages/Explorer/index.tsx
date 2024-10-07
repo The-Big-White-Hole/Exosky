@@ -264,7 +264,7 @@ const Explorer: React.FC = () => {
       mouse.current.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
       setMousePos({ x: event.clientX, y: event.clientY });
-      console.log(mousePos);
+      mousePos;
     };
 
     const onMouseClick = (event: MouseEvent) => {
@@ -283,7 +283,7 @@ const Explorer: React.FC = () => {
               2
             )}, ${planetData.y.toFixed(2)}, ${planetData.z.toFixed(2)})`
           );
-          console.log(tooltip);
+          tooltip;
         }
       } else {
         setTooltip(null);
