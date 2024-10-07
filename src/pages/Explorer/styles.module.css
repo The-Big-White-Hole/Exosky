@@ -6,14 +6,13 @@
 
 html, body {
   overflow: hidden;
-  /* width: 100%;
-  height: 100%; */
 }
 
 .container {
   width: 100vw;
   height: 100vh;
   position: relative;
+  overflow: hidden;
 }
 
 .webgl {
@@ -40,6 +39,8 @@ html, body {
   top: 0;
   left: 0;
   transition: transform 0.3s ease;
+  max-width: 80%;
+  overflow-y: auto;
 }
 
 .closeButton {
@@ -73,26 +74,6 @@ html, body {
   background-color: #292940;
 }
 
-.webgl {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  outline: none;
-  z-index: 0;
-}
-
-.tooltip {
-  position: absolute;
-  background-color: rgba(255, 255, 255, 0.8);
-  padding: 5px 10px;
-  border-radius: 5px;
-  pointer-events: none;
-  font-size: 14px;
-  z-index: 10;
-}
-
 .menuTitle {
   font-size: 24px;
   font-weight: bold;
@@ -105,6 +86,7 @@ html, body {
   margin-right: 10px;
   height: 40px;
 }
+
 .exoList {
   list-style-type: none;
   padding: 0;
@@ -145,15 +127,77 @@ html, body {
   margin: 10px;
 }
 
-.toggleButton {
-  position: absolute;
-  top: 20px;
-  left: 20px;
-  z-index: 1001;
-}
-
 .searchContainer {
   display: flex;
   align-items: center;
   margin-bottom: 20px;
 }
+
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modalContent {
+  background-color: #ffffff;
+  padding: 20px;
+  border-radius: 8px;
+  max-width: 400px;
+  width: 100%;
+}
+
+.modalContent h2 {
+  margin-top: 0;
+}
+
+.modalContent ul {
+  list-style: none;
+  padding: 0;
+}
+
+.modalContent li {
+  margin-bottom: 8px;
+}
+
+.infoPanel {
+  position: fixed;
+  right: 12.5%;
+  top: 25%;
+  width: 25%;
+  height: 50%;
+  background-color: #1e1e2f;
+  padding: 20px;
+  overflow-y: auto;
+  z-index: 10;
+  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  transition: transform 0.3s ease-in-out;
+  transform: translateX(0);
+}
+
+.infoPanel.hidden {
+  transform: translateX(100%);
+}
+
+.infoHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.closeButton {
+  background: none;
+  border: none;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+}
+

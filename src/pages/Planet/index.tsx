@@ -3,18 +3,19 @@ import * as THREE from 'three';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
-import { Options } from './options';
 import styles from './styles.module.css';
 import { createGalacticGrid, createEquatorialGrid } from './grid';
 import { Button } from '@/components/ui/button';
+import { useSearchParams } from 'react-router-dom';
+import { Card, CardContent } from '@/components/ui/card';
 
-const DEFAULT_LINE_MATERIAL = new THREE.LineDashedMaterial( {
-	color: 0x4deeea,
-	linewidth: 1,
-	scale: 1,
-	dashSize: 3,
-	gapSize: 1,
-} );
+const DEFAULT_LINE_MATERIAL = new THREE.LineDashedMaterial({
+  color: 0x4deeea,
+  linewidth: 1,
+  scale: 1,
+  dashSize: 3,
+  gapSize: 1,
+});
 
 
 export function PlanetView() {
@@ -23,6 +24,7 @@ export function PlanetView() {
   const camera = useRef(
     new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000)
   );
+  const [searchParams] = useSearchParams();
 
   // conttrolling the drawing mode
   const [isDrawingMode, setIsDrawingMode] = useState(false);
@@ -46,6 +48,9 @@ export function PlanetView() {
 
   const [equatorialGrid, setEquatorialGrid] = useState<THREE.Group | null>(null);
   const [galacticGrid, setGalacticGrid] = useState<THREE.Group | null>(null);
+
+  const [isEquatorialVisible, setIsEquatorialVisible] = useState(false);
+  const [isGalacticVisible, setIsGalacticVisible] = useState(false);
 
   const vertexShader = `
     attribute float size;
@@ -132,14 +137,14 @@ export function PlanetView() {
     mountRef.current.addEventListener('mousemove', onMouseMove);
     mountRef.current.addEventListener('click', onStarClick);
 
-    window.addEventListener('click', onWindowClick); // Новый обработчик для закрытия тултипа
+    window.addEventListener('click', onWindowClick);
 
     loadJSONData();
 
     return () => {
       window.removeEventListener('resize', onWindowResize);
       window.removeEventListener('wheel', onWheelZoom);
-      window.removeEventListener('click', onWindowClick); // Убираем обработчик
+      window.removeEventListener('click', onWindowClick);
 
       if (mountRef.current) {
         mountRef.current.removeEventListener('mousedown', onMouseDown);
@@ -154,11 +159,21 @@ export function PlanetView() {
     };
   }, []);
 
-  const onStarClick = () => {
-    const intersects = raycaster.current.intersectObjects(scene.current.children, true)
-      .filter((intersect: THREE.Intersection<THREE.Object3D>): intersect is THREE.Intersection<THREE.Points> => {
-        return intersect.object instanceof THREE.Points;
-      });
+  const onStarClick = (event: MouseEvent) => {
+    mouse.current.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.current.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+    raycaster.current.setFromCamera(mouse.current, camera.current);
+
+    const intersects = raycaster.current
+      .intersectObjects(scene.current.children, true)
+      .filter(
+        (
+          intersect: THREE.Intersection<THREE.Object3D>
+        ): intersect is THREE.Intersection<THREE.Points> => {
+          return intersect.object instanceof THREE.Points;
+        }
+      );
 
     if (intersects.length > 0) {
       const intersection = intersects[0];
@@ -173,25 +188,29 @@ export function PlanetView() {
           clearClickedStar();
         }
       } else {
-
-        // creating an initial point from the intrersected object
-        const starCoordsX = intersection.object.geometry.getAttribute("position").getX(starIndex);
-        const starCoordsY = intersection.object.geometry.getAttribute("position").getY(starIndex);
-        const starCoordsZ = intersection.object.geometry.getAttribute("position").getZ(starIndex);
+        const starCoordsX = intersection.object.geometry
+          .getAttribute('position')
+          .getX(starIndex);
+        const starCoordsY = intersection.object.geometry
+          .getAttribute('position')
+          .getY(starIndex);
+        const starCoordsZ = intersection.object.geometry
+          .getAttribute('position')
+          .getZ(starIndex);
         const starPoint = new THREE.Vector3(starCoordsX, starCoordsY, starCoordsZ);
 
-
-        // drawing line if it is already locked, or just lokcing the first point
         if (initialLinePoint.current) {
-          const lineGeometry = new THREE.BufferGeometry().setFromPoints([initialLinePoint.current, starPoint]);
-          const newLine =  new THREE.Line( lineGeometry , DEFAULT_LINE_MATERIAL);
+          const lineGeometry = new THREE.BufferGeometry().setFromPoints([
+            initialLinePoint.current,
+            starPoint,
+          ]);
+          const newLine = new THREE.Line(lineGeometry, DEFAULT_LINE_MATERIAL);
           scene.current.add(newLine);
-          initialLinePoint.current = starPoint
-        }
-        else {
+
+          initialLinePoint.current = null;
+        } else {
           initialLinePoint.current = starPoint;
         }
-
       }
     }
   };
@@ -297,11 +316,8 @@ export function PlanetView() {
   };
 
   const loadJSONData = async () => {
-
-    
-    // const response = await fetch('http://localhost:8000/exoplanets/Proxima%20Cen%20b/stars');
-    const response = await fetch('data/earth_stars.json');
-
+    const planetName = searchParams.get("name");
+    const response = await fetch(`https://exosky.earth/api/v1/exoplanets/${planetName}/stars`);
     const rawData = await response.json();
 
     const starData = convertDataToArray(rawData);
@@ -373,7 +389,7 @@ export function PlanetView() {
     return result;
   };
 
-  
+
   const toggleDrawingMode = (event: React.MouseEvent<HTMLButtonElement>) => {
     console.log(event);
     if (isDrawingMode) {
@@ -383,53 +399,81 @@ export function PlanetView() {
       console.log("LOADED :PPPPP")
       setIsDrawingMode(true);
     }
-    
+
   };
 
-  const toggleEquatorial = (isVisible: boolean) => {
-    if (!equatorialGrid && isVisible) {
+  const toggleEquatorial = (_: React.MouseEvent<HTMLButtonElement>) => {
+    if (!isEquatorialVisible) {
       const grid = createEquatorialGrid();
-      grid.raycast = () => { };
       setEquatorialGrid(grid);
       scene.current.add(grid);
-    } else if (equatorialGrid) {
-      if (isVisible) {
-        scene.current.add(equatorialGrid);
-      } else {
-        scene.current.remove(equatorialGrid);
-      }
+    } else {
+      scene.current.remove(equatorialGrid!);
+      setEquatorialGrid(null);
     }
+    setIsEquatorialVisible(!isEquatorialVisible);
   };
 
-  const toggleGalactic = (isVisible: boolean) => {
-    if (!galacticGrid && isVisible) {
+  const toggleGalactic = (_: React.MouseEvent<HTMLButtonElement>) => {
+    if (!isGalacticVisible) {
       const grid = createGalacticGrid();
-      grid.raycast = () => { };
       setGalacticGrid(grid);
       scene.current.add(grid);
-    } else if (galacticGrid) {
-      if (isVisible) {
-        scene.current.add(galacticGrid);
-      } else {
-        scene.current.remove(galacticGrid);
-      }
+    } else {
+      scene.current.remove(galacticGrid!);
+      setGalacticGrid(null);
     }
+    setIsGalacticVisible(!isGalacticVisible);
   };
+
+  const downloadPDF = async () => {
+    const planetName = searchParams.get("name");
+    const response = await fetch(`https://exosky.earth/api/v1/exoplanets/${planetName}/print`, {
+      method: 'GET',
+    });
+
+    if (!response.ok) {
+      console.error('Failed to download the PDF');
+      return;
+    }
+
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${planetName}_report.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+
+    window.URL.revokeObjectURL(url);
+  };
+
 
   return (
     <div>
       <div ref={mountRef} className={styles.canvasContainer} />
-      <Options toggleEquatorial={toggleEquatorial} toggleGalactic={toggleGalactic}/>
-      <Button variant={isDrawingMode? "destructive" : null} onClick={toggleDrawingMode}>{isDrawingMode? "OBSERVER MODE" : "DRAWING MODE"}</Button>
+      <Card className={styles.controlPanel}>
+        <CardContent>
+          <Button variant={isDrawingMode ? 'destructive' : 'default'} onClick={toggleDrawingMode}>
+            {isDrawingMode ? 'Stop Drawing' : 'Start Drawing'}
+          </Button>
+          <Button variant="default" onClick={toggleEquatorial}>
+            {isEquatorialVisible ? 'Hide Equatorial Grid' : 'Show Equatorial Grid'}
+          </Button>
+          <Button variant="default" onClick={toggleGalactic}>
+            {isGalacticVisible ? 'Hide Galactic Grid' : 'Show Galactic Grid'}
+          </Button>
+          <Button variant="default" onClick={downloadPDF}>
+            Download PDF Report
+          </Button>
+        </CardContent>
+      </Card>
+
       {hoveredStar && (
         <div className={styles.tooltip} style={{ top: `${tooltipPosition.top}px`, left: `${tooltipPosition.left}px` }}>
           {hoveredStar}
-        </div>
-      )}
-      {clickedStar && (
-        <div className={styles.tooltip} style={{ top: `${tooltipPosition.top + 20}px`, left: `${tooltipPosition.left}px`, position: 'absolute', background: 'rgba(255, 255, 255, 0.8)', padding: '5px', borderRadius: '5px' }}>
-          <span>{clickedStar}</span>
-          <button onClick={clearClickedStar} style={{ marginLeft: '10px', cursor: 'pointer', fontSize: '12px', padding: '2px 4px', background: 'transparent', border: 'none', color: 'red' }}>✖</button>
         </div>
       )}
     </div>

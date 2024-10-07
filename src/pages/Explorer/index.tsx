@@ -8,14 +8,20 @@ import styles from './styles.module.css';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import gsap from 'gsap';
+import { useNavigate } from 'react-router-dom';
 
 const Explorer: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const [tooltip, setTooltip] = useState<string | null>(null);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [exoplanets, setExoplanets] = useState<{ x: number; y: number; z: number; name: string }[]>([]);
   const [filteredExoplanets, setFilteredExoplanets] = useState<{ x: number; y: number; z: number; name: string }[]>([]);
+  const [mousePos, setMousePos] = useState<{ x: number, y: number }>({ x: 0, y: 0 });
+  const [tooltip, setTooltip] = useState<string | null>(null);
+  const [selectedExoplanet, setSelectedExoplanet] = useState<{ x: number; y: number; z: number; name: string } | null>(null);
+  const navigate = useNavigate();
+
+
   const controlsRef = useRef<OrbitControls | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
 
@@ -180,6 +186,9 @@ const Explorer: React.FC = () => {
 
       const planets = new THREE.Points(planetGeometry, planetMaterial);
       planets.renderOrder = 2;
+
+      planets.userData = planetData;
+
       scene.add(planets);
 
       return planetData;
@@ -254,13 +263,25 @@ const Explorer: React.FC = () => {
       mouse.current.x = (event.clientX / window.innerWidth) * 2 - 1;
       mouse.current.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
-      raycaster.current.setFromCamera(mouse.current, camera);
+      setMousePos({ x: event.clientX, y: event.clientY });
+    };
+
+    const onMouseClick = (event: MouseEvent) => {
+      mouse.current.x = (event.clientX / window.innerWidth) * 2 - 1;
+      mouse.current.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+      raycaster.current.setFromCamera(mouse.current, cameraRef.current!);
       const intersects = raycaster.current.intersectObjects(scene.children, true);
 
       if (intersects.length > 0) {
         const intersectedObject = intersects[0].object;
-        if (intersectedObject.userData.name) {
-          setTooltip(`Object: ${intersectedObject.userData.name}`);
+        const planetData = intersectedObject.userData;
+        if (planetData && planetData.name) {
+          setTooltip(
+            `Name: ${planetData.name}\nCoordinates: (${planetData.x.toFixed(
+              2
+            )}, ${planetData.y.toFixed(2)}, ${planetData.z.toFixed(2)})`
+          );
         }
       } else {
         setTooltip(null);
@@ -268,6 +289,7 @@ const Explorer: React.FC = () => {
     };
 
     window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('click', onMouseClick);
 
     const tick = () => {
       controls.update();
@@ -318,11 +340,18 @@ const Explorer: React.FC = () => {
     setFilteredExoplanets(filtered);
   };
 
+  const handlePlanetRoute = () => {
+    if (selectedExoplanet) {
+      const planetName = encodeURIComponent(selectedExoplanet.name);
+      navigate(`/planet?name=${planetName}`);
+    }
+  };
+
   return (
     <div className={styles.container}>
       {!isMenuOpen && (
         <Button onClick={() => setIsMenuOpen(true)} className={styles.toggleButton}>
-          ☰ Open Menu
+          ☰ Menu
         </Button>
       )}
 
@@ -345,7 +374,10 @@ const Explorer: React.FC = () => {
               <li
                 key={`${exo.x}-${exo.y}-${exo.z}`}
                 className={styles.exoItem}
-                onClick={() => focusOnExoplanet(exo.x, exo.y, exo.z)}
+                onClick={() => {
+                  focusOnExoplanet(exo.x, exo.y, exo.z);
+                  setSelectedExoplanet(exo);
+                }}
               >
                 {exo.name}
               </li>
@@ -354,8 +386,28 @@ const Explorer: React.FC = () => {
         </div>
       )}
 
+      {selectedExoplanet && (
+        <div className={styles.infoPanel}>
+          <div className={styles.infoHeader}>
+            <h2>{selectedExoplanet.name}</h2>
+            <Button onClick={() => setSelectedExoplanet(null)} variant="secondary" className={styles.closeButton}>
+              ✕
+            </Button>
+          </div>
+          <p>Coordinates:</p>
+          <ul>
+            <li>X: {selectedExoplanet.x.toFixed(2)}</li>
+            <li>Y: {selectedExoplanet.y.toFixed(2)}</li>
+            <li>Z: {selectedExoplanet.z.toFixed(2)}</li>
+          </ul>
+
+          <Button onClick={handlePlanetRoute} className="mt-4">
+              View Details
+            </Button>
+        </div>
+      )}
+
       <canvas ref={canvasRef} className={styles.webgl}></canvas>
-      {tooltip && <div className={styles.tooltip}>{tooltip}</div>}
     </div>
   );
 };
