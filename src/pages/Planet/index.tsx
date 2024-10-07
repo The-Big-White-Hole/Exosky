@@ -6,7 +6,7 @@ import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPa
 import styles from './styles.module.css';
 import { createGalacticGrid, createEquatorialGrid } from './grid';
 import { Button } from '@/components/ui/button';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 
 const DEFAULT_LINE_MATERIAL = new THREE.LineDashedMaterial({
@@ -25,6 +25,8 @@ export function PlanetView() {
     new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000)
   );
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const planetName = searchParams.get("name");
 
   // conttrolling the drawing mode
   const [isDrawingMode, setIsDrawingMode] = useState(false);
@@ -39,7 +41,7 @@ export function PlanetView() {
   const mouse = useRef(new THREE.Vector2());
 
   const isDragging = useRef(false);
-  const isRightMouseButtonPressed = useRef(false); // Новый реф для ПКМ
+  const isRightMouseButtonPressed = useRef(false);
   const prevMousePosition = useRef({ x: 0, y: 0 });
 
   const [hoveredStar, setHoveredStar] = useState<string | null>(null);
@@ -102,6 +104,8 @@ export function PlanetView() {
   `;
 
   useEffect(() => {
+    // temp set to exclude drawing
+    setIsDrawingMode(false);
     if (!mountRef.current) return;
 
     renderer.current = new THREE.WebGLRenderer({ antialias: true });
@@ -316,7 +320,6 @@ export function PlanetView() {
   };
 
   const loadJSONData = async () => {
-    const planetName = searchParams.get("name");
     const response = await fetch(`https://exosky.earth/api/v1/exoplanets/${planetName}/stars`);
     const rawData = await response.json();
 
@@ -390,17 +393,16 @@ export function PlanetView() {
   };
 
 
-  const toggleDrawingMode = (event: React.MouseEvent<HTMLButtonElement>) => {
-    console.log(event);
-    if (isDrawingMode) {
-      console.log("WRITTEN A");
-      setIsDrawingMode(false);
-    } else {
-      console.log("LOADED :PPPPP")
-      setIsDrawingMode(true);
-    }
-
-  };
+  // const toggleDrawingMode = (event: React.MouseEvent<HTMLButtonElement>) => {
+  //   console.log(event);
+  //   if (isDrawingMode) {
+  //     console.log("WRITTEN A");
+  //     setIsDrawingMode(false);
+  //   } else {
+  //     console.log("LOADED :PPPPP")
+  //     setIsDrawingMode(true);
+  //   }
+  // };
 
   const toggleEquatorial = (_: React.MouseEvent<HTMLButtonElement>) => {
     if (!isEquatorialVisible) {
@@ -450,15 +452,22 @@ export function PlanetView() {
     window.URL.revokeObjectURL(url);
   };
 
+  const goToExplorer = () => {
+    navigate('/explorer');
+  };
 
   return (
     <div>
       <div ref={mountRef} className={styles.canvasContainer} />
       <Card className={styles.controlPanel}>
         <CardContent>
-          <Button variant={isDrawingMode ? 'destructive' : 'default'} onClick={toggleDrawingMode}>
-            {isDrawingMode ? 'Stop Drawing' : 'Start Drawing'}
-          </Button>
+          <div className={styles.textCard}>
+            A 3D stellar map displays the stars that are visible to the human eye from the {planetName} planet. 
+            You can rotate the camera, turn on the equatorial and galactic grids, and download the map in PDF format.
+          </div>
+          {/* <Button variant={isDrawingMode ? 'destructive' : 'default'} onClick={toggleDrawingMode}> */}
+          {/*   {isDrawingMode ? 'Stop Drawing' : 'Start Drawing'} */}
+          {/* </Button> */}
           <Button variant="default" onClick={toggleEquatorial}>
             {isEquatorialVisible ? 'Hide Equatorial Grid' : 'Show Equatorial Grid'}
           </Button>
@@ -466,7 +475,10 @@ export function PlanetView() {
             {isGalacticVisible ? 'Hide Galactic Grid' : 'Show Galactic Grid'}
           </Button>
           <Button variant="default" onClick={downloadPDF}>
-            Download PDF Report
+            Download skychart (PDF)
+          </Button>
+          <Button variant="default" onClick={goToExplorer}>
+            Back to Explorer
           </Button>
         </CardContent>
       </Card>

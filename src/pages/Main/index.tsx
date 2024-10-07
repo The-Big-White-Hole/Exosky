@@ -10,7 +10,6 @@ const Main: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
-    // Загрузка текстуры для частиц
     const textureLoader = new THREE.TextureLoader();
     const shape = textureLoader.load('/textures/1.png');
 
@@ -133,7 +132,7 @@ const Main: React.FC = () => {
 
     const renderer = new THREE.WebGLRenderer({
       canvas: canvasRef.current as HTMLCanvasElement,
-      alpha: true, // Позволяет сделать фон прозрачным, если нужно
+      alpha: true,
     });
     renderer.setSize(sizes.width, sizes.height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -141,12 +140,11 @@ const Main: React.FC = () => {
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
 
-    let isMounted = true; // Флаг для остановки анимации при размонтировании
+    let isMounted = true;
 
     const tick = () => {
       if (!isMounted) return;
 
-      // Вращение галактики (можете настроить скорость)
       if (points) points.rotation.y += 0.001;
       if (bgStars) bgStars.rotation.y -= 0.0005;
 
@@ -157,7 +155,6 @@ const Main: React.FC = () => {
 
     tick();
 
-    // Обработчик изменения размера окна
     const handleResize = () => {
       sizes.width = window.innerWidth;
       sizes.height = window.innerHeight;
@@ -169,29 +166,23 @@ const Main: React.FC = () => {
 
     window.addEventListener('resize', handleResize);
 
-    // Очистка при размонтировании компонента
     return () => {
-      isMounted = false; // Останавливаем анимацию
+      isMounted = false; 
 
       window.removeEventListener('resize', handleResize);
       
-      // Отключаем и очищаем OrbitControls
       controls.dispose();
 
-      // Удаляем и освобождаем bgStars
       if (bgStarsGeometry) bgStarsGeometry.dispose();
       if (bgStarsMaterial) bgStarsMaterial.dispose();
       if (bgStars) scene.remove(bgStars);
 
-      // Удаляем и освобождаем points
       if (geometry) geometry.dispose();
       if (material) material.dispose();
       if (points) scene.remove(points);
 
-      // Освобождаем текстуру
       if (shape && shape.dispose) shape.dispose();
 
-      // Освобождаем рендерер
       renderer.dispose();
     };
   }, []);
@@ -206,10 +197,8 @@ const Main: React.FC = () => {
         overflow: 'hidden',
       }}
     >
-      {/* Канвас с Three.js галактикой */}
       <canvas ref={canvasRef} style={{ position: 'absolute', top: 0, left: 0 }} />
 
-      {/* Карточка с кнопками поверх галактики */}
       <Card
         style={{
           position: 'absolute',
@@ -219,7 +208,7 @@ const Main: React.FC = () => {
           textAlign: 'center',
           zIndex: 1,
           maxWidth: '400px',
-          background: 'rgba(0, 0, 0, 0.5)', // Полупрозрачный фон для лучшей видимости
+          background: 'rgba(0, 0, 0, 0.5)',
           padding: '20px',
           borderRadius: '10px',
         }}
@@ -232,13 +221,8 @@ const Main: React.FC = () => {
         <CardContent>
           <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
             <Link to="/explorer">
-              <Button variant="destructive">
+              <Button>
                 Explore
-              </Button>
-            </Link>
-            <Link to="/planet">
-              <Button variant="secondary">
-                Planet
               </Button>
             </Link>
           </div>

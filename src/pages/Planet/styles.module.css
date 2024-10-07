@@ -31,3 +31,15 @@
   background-color: rgba(255, 255, 255, 0.1);
 }
 
+.textCard {
+  flex: 1;
+  background-color: #1e1e2f;
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.2);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 1rem;
+  border-radius: 8px;
+  margin-top: 1rem;
+  color: white;
+  font-size: 14px;
+}
+

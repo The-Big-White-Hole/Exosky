@@ -359,32 +359,46 @@ const Explorer: React.FC = () => {
 
       {isMenuOpen && (
         <div className={styles.menu}>
-          <div className={styles.searchContainer}>
-            <Input
-              type="text"
-              placeholder="Search Exoplanet..."
-              value={searchQuery}
-              onChange={handleSearch}
-              className={styles.searchInput}
-            />
-            <Button onClick={() => setIsMenuOpen(false)} variant="secondary" className={styles.closeButton}>
-              ✕
-            </Button>
+          <div className={styles.leftContainer}>
+            <div className={styles.searchContainer}>
+              <Input
+                type="text"
+                placeholder="Search Exoplanet..."
+                value={searchQuery}
+                onChange={handleSearch}
+                className={styles.searchInput}
+              />
+              <Button onClick={() => setIsMenuOpen(false)} variant="secondary" className={styles.closeButton}>
+                ✕
+              </Button>
+            </div>
+            <ul className={styles.exoList}>
+              {filteredExoplanets.map((exo) => (
+                <li
+                  key={`${exo.x}-${exo.y}-${exo.z}`}
+                  className={styles.exoItem}
+                  onClick={() => {
+                    focusOnExoplanet(exo.x, exo.y, exo.z);
+                    setSelectedExoplanet(exo);
+                  }}
+                >
+                  {exo.name}
+                </li>
+              ))}
+            </ul>
+
+            <div className={styles.textCard}>
+              <p>
+                It's an astronomically correct map of the neighborhood of the Solar System. Green circles represent stars around which exoplanets were found, while the green circle in the center is the Sun. 
+              </p>
+              <p>
+                The size of the stars is exaggerated, but distances between them are accurate. The map covers stars within a radius of 70 kPc, which represents only 0.008% of all stars in the Universe.
+              </p>
+              <p>
+                In the left panel, you can search or select an exoplanet. Clicking on one will take you to it and display more information. Clicking the "Sky view from this planet" button will open a 3D map of the sky from that exoplanet's perspective.
+              </p>
+            </div>
           </div>
-          <ul className={styles.exoList}>
-            {filteredExoplanets.map((exo) => (
-              <li
-                key={`${exo.x}-${exo.y}-${exo.z}`}
-                className={styles.exoItem}
-                onClick={() => {
-                  focusOnExoplanet(exo.x, exo.y, exo.z);
-                  setSelectedExoplanet(exo);
-                }}
-              >
-                {exo.name}
-              </li>
-            ))}
-          </ul>
         </div>
       )}
 
@@ -404,8 +418,8 @@ const Explorer: React.FC = () => {
           </ul>
 
           <Button onClick={handlePlanetRoute} className="mt-4">
-              View Details
-            </Button>
+             Skyview from this planet 
+          </Button>
         </div>
       )}
 
