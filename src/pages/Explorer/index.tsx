@@ -16,8 +16,8 @@ const Explorer: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [exoplanets, setExoplanets] = useState<{ x: number; y: number; z: number; name: string }[]>([]);
   const [filteredExoplanets, setFilteredExoplanets] = useState<{ x: number; y: number; z: number; name: string }[]>([]);
-  const [mousePos, setMousePos] = useState<{ x: number, y: number }>({ x: 0, y: 0 });
-  const [tooltip, setTooltip] = useState<string | null>(null);
+  // const [mousePos, setMousePos] = useState<{ x: number, y: number }>({ x: 0, y: 0 });
+  // const [tooltip, setTooltip] = useState<string | null>(null);
   const [selectedExoplanet, setSelectedExoplanet] = useState<{ x: number; y: number; z: number; name: string } | null>(null);
   const navigate = useNavigate();
 
